@@ -1,0 +1,138 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model pengguna {
+  id_pengguna   String  @id @db.Char(7)
+  nama_pengguna String? @db.VarChar(32)
+  email         String  @unique @db.VarChar(32)
+  koin          Int     @default(0)
+  stamp         Int     @default(0)
+  password      String  @db.VarChar(255)
+
+  transaksi_koin  transaksi_koin[]
+  peminjaman_buku peminjaman_buku[]
+}
+
+model staff {
+  id_staff   String  @id @db.Char(7)
+  username   String  @unique @db.VarChar(32)
+  nama_staff String? @db.VarChar(32)
+  password   String  @db.VarChar(255)
+}
+
+model kategori {
+  id_kategori   String  @id @db.Char(7)
+  nama_kategori String? @db.VarChar(50)
+
+  buku_kategori buku_kategori[]
+}
+
+model buku {
+  id_buku    String  @id @db.Char(6)
+  judul      String  @db.VarChar(255)
+  deskripsi  String? @db.Text
+  stok       Int     @default(0)
+  koin       Int     @default(0)
+  stamp      Int     @default(0)
+  penerbit   String  @db.VarChar(32)
+  penulis    String  @db.VarChar(32)
+  thn_terbit Int     @db.Year
+
+  buku_kategori buku_kategori[]
+  detail_buku   detail_buku[]
+}
+
+model koin {
+  id_koin  String  @id @db.Char(4)
+  jum_koin Int     @default(0)
+  harga    Decimal @default(0.00) @db.Decimal(10, 2)
+
+  transaksi_koin transaksi_koin[]
+}
+
+model detail_buku {
+  id_detail_buku String             @id @db.Char(4)
+  id_buku        String             @db.Char(6)
+  status         detail_buku_status @default(TERSEDIA)
+
+  buku            buku              @relation(fields: [id_buku], references: [id_buku])
+  peminjaman_buku peminjaman_buku[]
+}
+
+model buku_kategori {
+  id_buku     String @db.Char(6)
+  id_kategori String @db.Char(7)
+
+  buku     buku     @relation(fields: [id_buku], references: [id_buku])
+  kategori kategori @relation(fields: [id_kategori], references: [id_kategori])
+
+  @@id([id_buku, id_kategori])
+}
+
+model transaksi_koin {
+  id_transaksi_koin String                           @id @db.Char(4)
+  id_pengguna       String                           @db.Char(7)
+  id_koin           String                           @db.Char(4)
+  jum_koin          Int                              @default(0)
+  harga             Decimal                          @default(0.00) @db.Decimal(10, 2)
+  metode_pembayaran transaksi_koin_metode_pembayaran
+
+  pengguna pengguna @relation(fields: [id_pengguna], references: [id_pengguna])
+  koin     koin     @relation(fields: [id_koin], references: [id_koin])
+}
+
+model peminjaman_buku {
+  id_peminjaman  String                 @id @db.Char(7)
+  id_pengguna    String                 @db.Char(7)
+  id_detail_buku String                 @db.Char(7)
+  tgl_pinjam     DateTime               @db.Date
+  tgl_kembali    DateTime               @db.Date
+  koin_reward    Int                    @default(0)
+  denda_koin     Int                    @default(0)
+  stamp_reward   Int                    @default(0)
+  status         peminjaman_buku_status @default(DIPROSES)
+  metode         peminjaman_buku_metode @default(KOIN)
+
+  pengguna    pengguna    @relation(fields: [id_pengguna], references: [id_pengguna])
+  detail_buku detail_buku @relation(fields: [id_detail_buku], references: [id_detail_buku])
+}
+
+// ===== ENUMS =====
+
+enum detail_buku_status {
+  TERSEDIA
+  DIPESAN
+  DIPINJAM
+  HILANG
+  RUSAK
+}
+
+enum transaksi_koin_metode_pembayaran {
+  E_MONEY @map("E-MONEY")
+  VA
+  OUTLET
+  QRIS
+}
+
+enum peminjaman_buku_status {
+  DIPROSES
+  DITOLAK
+  DIPINJAM
+  DIKEMBALIKAN
+}
+
+enum peminjaman_buku_metode {
+  KOIN
+  STAMP
+}
