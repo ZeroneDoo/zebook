@@ -27,7 +27,7 @@ export const authOptions: NextAuthOptions = {
           return {
             id: user.id_pengguna,
             name: user.nama_pengguna,
-            email: user.email,
+            identity: user.email,
             role: "pengguna" as const,
           }
 
@@ -40,7 +40,7 @@ export const authOptions: NextAuthOptions = {
           return {
             id: user.id_staff,
             name: user.nama_staff,
-            email: null,
+            identity: user.username,
             role: "staff" as const,
           }
         }
