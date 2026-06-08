@@ -48,6 +48,7 @@ model buku {
   penerbit   String  @db.VarChar(32)
   penulis    String  @db.VarChar(32)
   thn_terbit Int     @db.Year
+  img_url    String  @db.Text
 
   buku_kategori buku_kategori[]
   detail_buku   detail_buku[]

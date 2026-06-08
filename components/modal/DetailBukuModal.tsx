@@ -1,7 +1,7 @@
 import { AlertTriangle, Plus, Sliders, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/Toast";
-import { detail_buku, detail_buku_status } from "@/app/generated/prisma/client";
+import { detail_buku_status } from "@/app/generated/prisma/client";
 import { DetailBukuModel } from "@/lib/models";
 import { detailBukuStatus } from "@/lib/enums";
 

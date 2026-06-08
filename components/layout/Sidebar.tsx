@@ -39,7 +39,7 @@ const menuItems: MenuItem[] = [
       { label: "Transaksi Koin", icon: ArrowLeftRight, href: "/admin/transaksi-koin" },
     ]
   },
-  { label: "Peminjaman", icon: BookMarked, href: "/admin/peminjaman" },
+  { label: "Peminjaman Buku", icon: BookMarked, href: "/admin/peminjaman-buku" },
 ];
 
 const generalItems: NavFlat[] = [

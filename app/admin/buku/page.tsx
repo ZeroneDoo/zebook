@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Plus, BookOpen, Calendar, User, Building } from "lucide-react";
+// Tambahkan icon X untuk tombol close modal pratinjau gambar
+import { Plus, Calendar, User, Building, X } from "lucide-react";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { Pagination } from "@/lib/interfaces";
 import { DeleteBukuModal, EditBukuModal, TambahBukuModal } from "@/components/modal/BukuModal";
@@ -10,8 +11,7 @@ import { SearchBar } from "@/components/dashboard/SearchBar";
 import { ColumnDef, DataTable } from "@/components/dashboard/DataTable";
 import { ToastContainer, useToast } from "@/components/Toast";
 import { buku } from "@/app/generated/prisma/client";
-
-// Definisikan interface sesuai skema tabel buku Anda
+import Image from "next/image";
 
 interface ApiResponse {
 	data: buku[];
@@ -43,6 +43,9 @@ export default function BukuPage() {
 	const [hapusBuku, setHapusBuku] = useState<buku | null>(null);
 	const [refreshKey, setRefreshKey] = useState(0);
 
+	// State Baru: Pratinjau Gambar Sampul
+	const [previewImage, setPreviewImage] = useState<{ src: string; title: string } | null>(null);
+
 	const columns: ColumnDef<buku>[] = [
 		{
 			field: "judul",
@@ -50,8 +53,20 @@ export default function BukuPage() {
 			sortable: true,
 			render: (row) => (
 				<div className="flex items-start gap-3 max-w-sm">
-					<div className="w-10 h-12 rounded-lg bg-orange-50 border border-orange-100 flex flex-col items-center justify-center text-[#E8461E] shrink-0 shadow-sm">
-						<BookOpen size={18} />
+					{/* MODIFIKASI: Menambahkan properti interaktif (cursor-pointer, group, onClick) */}
+					<div
+						className="relative w-12 h-14 rounded-md border border-orange-100 shrink-0 shadow-sm overflow-hidden cursor-pointer group hover:border-orange-300 transition-colors"
+						onClick={() => setPreviewImage({ src: row.img_url, title: row.judul })}
+						title="Klik untuk memperbesar sampul"
+					>
+						<Image
+							src={row.img_url}
+							alt={row.judul}
+							fill
+							className="object-cover group-hover:scale-110 transition-transform duration-200" // Efek zoom saat hover
+							sizes="48px"
+							priority={false}
+						/>
 					</div>
 					<div className="min-w-0">
 						<p className="font-bold text-gray-800 text-sm truncate leading-snug">
@@ -90,9 +105,6 @@ export default function BukuPage() {
 						<span className="text-sm text-violet-400">◈</span>
 						<span className="text-sm font-semibold text-gray-700">{row.stamp}</span>
 					</div>
-					{/* <span className="text-xs text-purple-600 font-semibold flex items-center gap-1">
-						🎟️ {row.stamp} Stamp
-					</span> */}
 				</div>
 			),
 		},
@@ -191,6 +203,43 @@ export default function BukuPage() {
 					onSuccess={refetch}
 					toast={toast}
 				/>
+			)}
+
+			{/* MODAL BARU: Image Preview Modal */}
+			{previewImage && (
+				<div
+					className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+					onClick={() => setPreviewImage(null)}
+				>
+					<div
+						className="relative max-w-sm w-full bg-white rounded-2xl p-4 shadow-2xl flex flex-col items-center border border-gray-100"
+						onClick={(e) => e.stopPropagation()} // Mencegah modal tertutup saat area gambar diklik
+					>
+						<button
+							onClick={() => setPreviewImage(null)}
+							className="absolute top-3 right-3 p-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-500 transition-colors z-10"
+						>
+							<X size={16} />
+						</button>
+
+						<div className="w-full text-center mb-3 px-6">
+							<h3 className="font-bold text-gray-900 truncate text-sm">{previewImage.title}</h3>
+							<p className="text-[11px] text-gray-400">Pratinjau Sampul Buku</p>
+						</div>
+
+						{/* Wadah Gambar Proporsional */}
+						<div className="relative w-full aspect-3/4 bg-gray-50 rounded-xl border border-gray-100 overflow-hidden shadow-inner">
+							<Image
+								src={previewImage.src}
+								alt={previewImage.title}
+								fill
+								className="object-contain p-2" // Menggunakan object-contain agar seluruh sampul terlihat tanpa terpotong
+								sizes="(max-w-sm) 100vw, 350px"
+								priority
+							/>
+						</div>
+					</div>
+				</div>
 			)}
 
 			<ToastContainer toasts={toasts} onRemove={remove} />

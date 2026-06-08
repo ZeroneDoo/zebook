@@ -7,6 +7,7 @@ CREATE TABLE `pengguna` (
     `stamp` INTEGER NOT NULL DEFAULT 0,
     `password` VARCHAR(255) NOT NULL,
 
+    UNIQUE INDEX `pengguna_email_key`(`email`),
     PRIMARY KEY (`id_pengguna`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -17,6 +18,7 @@ CREATE TABLE `staff` (
     `nama_staff` VARCHAR(32) NULL,
     `password` VARCHAR(255) NOT NULL,
 
+    UNIQUE INDEX `staff_username_key`(`username`),
     PRIMARY KEY (`id_staff`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -39,6 +41,7 @@ CREATE TABLE `buku` (
     `penerbit` VARCHAR(32) NOT NULL,
     `penulis` VARCHAR(32) NOT NULL,
     `thn_terbit` YEAR NOT NULL,
+    `img_url` TEXT NOT NULL,
 
     PRIMARY KEY (`id_buku`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

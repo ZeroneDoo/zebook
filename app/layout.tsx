@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-// import { Geist, Geist_Mono } from "next/font/google";
+import { Cormorant_Garamond, Jost } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Provider";
 
@@ -12,6 +12,21 @@ import Providers from "@/components/Provider";
 //   variable: "--font-geist-mono",
 //   subsets: ["latin"],
 // });
+
+// Configure Cormorant Garamond
+const cormorantGaramond = Cormorant_Garamond({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  style: ['normal', 'italic'],
+  variable: '--font-cormorant', // Defines a local CSS variable
+});
+
+// Configure Jost
+const jost = Jost({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600'],
+  variable: '--font-jost',
+});
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -26,6 +41,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      className={`${cormorantGaramond.variable} ${jost.variable}`}
     >
       <body><Providers>{children}</Providers></body>
     </html>

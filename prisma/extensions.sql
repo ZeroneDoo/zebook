@@ -81,7 +81,8 @@ CREATE PROCEDURE sp_tambah_buku(
    IN p_penerbit       VARCHAR(32),
    IN p_penulis        VARCHAR(32),
    IN p_thn_terbit     YEAR,
-   IN p_kategori_ids   TEXT
+   IN p_kategori_ids   TEXT,
+   IN p_img_url        TEXT
 )
 BEGIN
    DECLARE v_id_buku       CHAR(6);
@@ -99,8 +100,8 @@ BEGIN
    SET v_id_buku = CONCAT('BK', LPAD(v_max_buku + 1, 4, '0'));
 
    -- Insert buku
-   INSERT INTO buku (id_buku, judul, deskripsi, stok, koin, stamp, penerbit, penulis, thn_terbit)
-   VALUES (v_id_buku, p_judul, p_deskripsi, 0, p_koin, p_stamp, p_penerbit, p_penulis, p_thn_terbit);
+   INSERT INTO buku (id_buku, judul, deskripsi, stok, koin, stamp, penerbit, penulis, thn_terbit, img_url)
+   VALUES (v_id_buku, p_judul, p_deskripsi, 0, p_koin, p_stamp, p_penerbit, p_penulis, p_thn_terbit, p_img_url);
 
    -- Insert Kategori Buku
    SET v_remaining = p_kategori_ids;
@@ -148,7 +149,8 @@ CREATE PROCEDURE sp_edit_buku(
    IN p_penerbit       VARCHAR(32),
    IN p_penulis        VARCHAR(32),
    IN p_thn_terbit     YEAR,
-   IN p_kategori_ids   TEXT
+   IN p_kategori_ids   TEXT,
+   IN p_img_url        TEXT
 )
 BEGIN
    -- Update buku
@@ -159,7 +161,8 @@ BEGIN
       stamp       = p_stamp,
       penerbit    = p_penerbit,
       penulis     = p_penulis,
-      thn_terbit  = p_thn_terbit
+      thn_terbit  = p_thn_terbit,
+      img_url     = p_img_url
    WHERE id_buku = p_id_buku;
 
    -- Hapus kategori lama yang ga ada di kategori baru
