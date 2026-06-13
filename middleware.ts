@@ -39,10 +39,22 @@ export async function middleware(req: NextRequest) {
 
   // ── USER PAGES ───────────────────────────────────
   // not logged in → redirect to login
-  if (isUserPage && !token) {
-    return NextResponse.redirect(new URL("/login", req.url))
+  // if (isUserPage && !token) {
+  //   return NextResponse.redirect(new URL("/login", req.url))
+  // }
+  // ── USER PAGES PROTECTED ─────────────────────────
+  // Guard ketat: pastikan hanya session dengan role "pengguna" yang bisa masuk
+  if (isUserPage) {
+    if (!token) {
+      // Jika belum login sama sekali
+      return NextResponse.redirect(new URL("/login", req.url))
+    }
+    
+    if (token.role !== "pengguna" && token.role === "staff") {
+      // Jika yang mencoba masuk adalah staff akun, alihkan ke dashboard admin mereka
+      return NextResponse.redirect(new URL("/admin/dashboard", req.url))
+    }
   }
-
   return NextResponse.next()
 }
 
@@ -52,5 +64,9 @@ export const config = {
     "/login",
     "/register",
     "/dashboard/:path*",  // add any other protected user pages here
+    "/transaksi-koin",
+    "/peminjaman",
+    "/top-up",
+    "/profile",
   ]
 }

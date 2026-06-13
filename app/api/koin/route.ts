@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { generateId } from '@/lib/generated'
+import { Prisma } from '@/app/generated/prisma/client'
+import { KoinModel } from '@/lib/models'
 
-// GET semua koin (dengan filter search & pagination)
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
@@ -10,66 +11,53 @@ export async function GET(req: NextRequest) {
     const pageParam = searchParams.get("page")
     const limitParam = searchParams.get("limit")
     const search = searchParams.get("search")
-
     const sortFieldParam = searchParams.get("sort_field")
     const sortDirParam = searchParams.get("sort_dir")
 
     const usePagination = pageParam && limitParam
 
-    const allowedSortFields = ["id_koin", "jum_koin", "harga"]
-    const sortField = allowedSortFields.includes(sortFieldParam || "") ? sortFieldParam : "id_koin"
-    const sortDir = sortDirParam?.toUpperCase() === "DESC" ? "DESC" : "ASC"
-    const orderQuery = `ORDER BY ${sortField} ${sortDir}`
+    const allowedSortFields = ["id_koin", "jum_koin", "harga"] as const
+    type SortField = typeof allowedSortFields[number]
 
-    let whereQuery = ""
-    let keyword = ""
+    const sortField: SortField = allowedSortFields.includes(sortFieldParam as SortField)
+      ? (sortFieldParam as SortField)
+      : "id_koin"
+    const sortDir = sortDirParam?.toUpperCase() === "DESC" ? "desc" : "asc"
 
-    if (search) {
-      whereQuery = `WHERE id_koin LIKE ? OR CAST(jum_koin AS CHAR) LIKE ?`
-      keyword = `%${search}%`
-    }
+    const whereClause: Prisma.koinWhereInput = search
+      ? {
+          OR: [
+            { id_koin: { contains: search } },
+            { jum_koin: { equals: isNaN(Number(search)) ? undefined : Number(search) } },
+          ],
+        }
+      : {}
 
-    // TANPA PAGINATION
     if (!usePagination) {
-      if (search) {
-        const koinData = await prisma.$queryRawUnsafe(
-          `SELECT id_koin, jum_koin, harga FROM koin ${whereQuery} ${orderQuery}`,
-          keyword,
-          keyword
-        )
-        return NextResponse.json({ data: koinData })
-      }
+      const koinData: KoinModel[] = await prisma.koin.findMany({
+        where: whereClause,
+        orderBy: { [sortField]: sortDir },
+      })
 
-      const koinData = await prisma.$queryRawUnsafe(`SELECT id_koin, jum_koin, harga FROM koin ${orderQuery}`)
       return NextResponse.json({ data: koinData })
     }
 
-    // DENGAN PAGINATION
     const page = Number(pageParam)
     const limit = Number(limitParam)
     const offset = (page - 1) * limit
 
-    let koinData: unknown
-    let totalResult: unknown
-
-    if (search) {
-      koinData = await prisma.$queryRawUnsafe(
-        `SELECT id_koin, jum_koin, harga FROM koin ${whereQuery} ${orderQuery} LIMIT ? OFFSET ?`,
-        keyword,
-        keyword,
-        limit,
-        offset
-      )
-      totalResult = await prisma.$queryRawUnsafe(`SELECT COUNT(*) as total FROM koin ${whereQuery}`, keyword, keyword)
-    } else {
-      koinData = await prisma.$queryRawUnsafe(`SELECT id_koin, jum_koin, harga FROM koin ${orderQuery} LIMIT ? OFFSET ?`, limit, offset)
-      totalResult = await prisma.$queryRaw`SELECT COUNT(*) as total FROM koin`
-    }
-
-    const totalData = Number((totalResult as unknown as { total: number }[])[0].total)
+    const [koinData, totalData] = await prisma.$transaction([
+      prisma.koin.findMany({
+        where: whereClause,
+        orderBy: { [sortField]: sortDir },
+        take: limit,
+        skip: offset,
+      }),
+      prisma.koin.count({ where: whereClause }),
+    ])
 
     return NextResponse.json({
-      data: koinData,
+      data: koinData as KoinModel[],
       pagination: {
         totalData,
         totalPage: Math.ceil(totalData / limit),
@@ -80,7 +68,7 @@ export async function GET(req: NextRequest) {
     })
 
   } catch (error) {
-    console.log("error api koin: ", error)
+    console.error("Error API Koin GET:", error)
     return NextResponse.json({ error: "Gagal mengambil data koin" }, { status: 500 })
   }
 }

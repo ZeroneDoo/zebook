@@ -10,6 +10,7 @@ import { Breadcrumb } from "@/components/dashboard/BreadCrumb";
 import { SearchBar } from "@/components/dashboard/SearchBar";
 import { ColumnDef, DataTable } from "@/components/dashboard/DataTable";
 import { ToastContainer, useToast } from "@/components/Toast";
+import { formatNumber, formatRupiah } from "@/lib/formats";
 
 interface ApiResponse {
 	data: koin[];
@@ -53,7 +54,7 @@ export default function KoinPage() {
 					</div>
 					<div>
 						<p className="font-bold text-gray-800 text-sm leading-tight">
-							{Number(row.jum_koin).toLocaleString("id-ID")} Koin
+							{formatNumber(Number(row.jum_koin))} Koin
 						</p>
 						<p className="text-xs text-gray-400 leading-tight">Paket Koin</p>
 					</div>
@@ -66,7 +67,7 @@ export default function KoinPage() {
 			sortable: true,
 			render: (row) => (
 				<span className="font-semibold text-sm text-gray-700 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-xl">
-					Rp {Number(row.harga).toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+					Rp {Number(row.harga)}
 				</span>
 			),
 		},

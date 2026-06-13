@@ -2,6 +2,7 @@ import { AlertTriangle, Coins, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/components/Toast";
 import { koin } from "@/app/generated/prisma/client";
+import { formatRupiah } from "@/lib/formats";
 
 type ToastFn = ReturnType<typeof useToast>["toast"];
 
@@ -341,7 +342,7 @@ export function DeleteKoinModal({
 					<div className="mt-4 flex items-center justify-between px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl">
 						<div className="flex items-center gap-2.5">
 							<Coins size={16} className="text-amber-500" />
-							<span className="text-sm font-bold text-gray-800">{Number(koin.jum_koin).toLocaleString("id-ID")} Koin</span>
+							<span className="text-sm font-bold text-gray-800">{formatRupiah(Number(koin.jum_koin))} Koin</span>
 						</div>
 						<span className="font-mono text-xs bg-white border border-gray-200 text-gray-500 px-2 py-1 rounded-lg shrink-0">
 							{koin.id_koin}

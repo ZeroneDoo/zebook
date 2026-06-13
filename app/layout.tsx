@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Jost } from "next/font/google";
+import { Jost, Nunito_Sans } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Provider";
 
@@ -14,10 +14,10 @@ import Providers from "@/components/Provider";
 // });
 
 // Configure Cormorant Garamond
-const cormorantGaramond = Cormorant_Garamond({
+const cormorantGaramond = Nunito_Sans({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
-  style: ['normal', 'italic'],
+  style: ['normal'],
   variable: '--font-cormorant', // Defines a local CSS variable
 });
 

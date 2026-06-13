@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { generateId } from '@/lib/generated'
+import { KategoriModel } from '@/lib/models'
+import { Prisma } from '@/app/generated/prisma/client'
 
-// GET semua kategori (dengan pencarian & pagination raw SQL)
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
@@ -10,66 +11,53 @@ export async function GET(req: NextRequest) {
     const pageParam = searchParams.get("page")
     const limitParam = searchParams.get("limit")
     const search = searchParams.get("search")
-
     const sortFieldParam = searchParams.get("sort_field")
     const sortDirParam = searchParams.get("sort_dir")
 
     const usePagination = pageParam && limitParam
 
-    const allowedSortFields = ["id_kategori", "nama_kategori"]
-    const sortField = allowedSortFields.includes(sortFieldParam || "") ? sortFieldParam : "id_kategori"
-    const sortDir = sortDirParam?.toUpperCase() === "DESC" ? "DESC" : "ASC"
-    const orderQuery = `ORDER BY ${sortField} ${sortDir}`
+    const allowedSortFields = ["id_kategori", "nama_kategori"] as const
+    type SortField = typeof allowedSortFields[number]
 
-    let whereQuery = ""
-    let keyword = ""
+    const sortField: SortField = allowedSortFields.includes(sortFieldParam as SortField)
+      ? (sortFieldParam as SortField)
+      : "id_kategori"
+    const sortDir = sortDirParam?.toUpperCase() === "DESC" ? "desc" : "asc"
 
-    if (search) {
-      whereQuery = `WHERE id_kategori LIKE ? OR nama_kategori LIKE ?`
-      keyword = `%${search}%`
-    }
+    const whereClause: Prisma.kategoriWhereInput = search
+      ? {
+          OR: [
+            { id_kategori: { contains: search } },
+            { nama_kategori: { contains: search } },
+          ],
+        }
+      : {}
 
-    // TANPA PAGINATION
     if (!usePagination) {
-      if (search) {
-        const kategoriData = await prisma.$queryRawUnsafe(
-          `SELECT id_kategori, nama_kategori FROM kategori ${whereQuery} ${orderQuery}`,
-          keyword,
-          keyword
-        )
-        return NextResponse.json({ data: kategoriData })
-      }
+      const kategoriData: KategoriModel[] = await prisma.kategori.findMany({
+        where: whereClause,
+        orderBy: { [sortField]: sortDir },
+      })
 
-      const kategoriData = await prisma.$queryRawUnsafe(`SELECT id_kategori, nama_kategori FROM kategori ${orderQuery}`)
       return NextResponse.json({ data: kategoriData })
     }
 
-    // DENGAN PAGINATION
     const page = Number(pageParam)
     const limit = Number(limitParam)
     const offset = (page - 1) * limit
 
-    let kategoriData: unknown
-    let totalResult: unknown
-
-    if (search) {
-      kategoriData = await prisma.$queryRawUnsafe(
-        `SELECT id_kategori, nama_kategori FROM kategori ${whereQuery} ${orderQuery} LIMIT ? OFFSET ?`,
-        keyword,
-        keyword,
-        limit,
-        offset
-      )
-      totalResult = await prisma.$queryRawUnsafe(`SELECT COUNT(*) as total FROM kategori ${whereQuery}`, keyword, keyword)
-    } else {
-      kategoriData = await prisma.$queryRawUnsafe(`SELECT id_kategori, nama_kategori FROM kategori ${orderQuery} LIMIT ? OFFSET ?`, limit, offset)
-      totalResult = await prisma.$queryRaw`SELECT COUNT(*) as total FROM kategori`
-    }
-
-    const totalData = Number((totalResult as unknown as { total: number }[])[0].total)
+    const [kategoriData, totalData] = await prisma.$transaction([
+      prisma.kategori.findMany({
+        where: whereClause,
+        orderBy: { [sortField]: sortDir },
+        take: limit,
+        skip: offset,
+      }),
+      prisma.kategori.count({ where: whereClause }),
+    ])
 
     return NextResponse.json({
-      data: kategoriData,
+      data: kategoriData as KategoriModel[],
       pagination: {
         totalData,
         totalPage: Math.ceil(totalData / limit),
@@ -80,7 +68,7 @@ export async function GET(req: NextRequest) {
     })
 
   } catch (error) {
-    console.log("error api kategori: ", error)
+    console.error("Error API Kategori GET:", error)
     return NextResponse.json({ error: "Gagal mengambil data kategori" }, { status: 500 })
   }
 }

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
+import { BukuModel } from '@/lib/models'
+import { Prisma } from '@/app/generated/prisma/client'
 
 // GET untuk mengambil data daftar buku (disertai search & pagination)
 export async function GET(req: NextRequest) {
@@ -15,55 +17,66 @@ export async function GET(req: NextRequest) {
 
     const usePagination = pageParam && limitParam
 
-    const allowedSortFields = ["id_buku", "judul", "stok", "koin", "thn_terbit"]
-    const sortField = allowedSortFields.includes(sortFieldParam || "") ? sortFieldParam : "id_buku"
-    const sortDir = sortDirParam?.toUpperCase() === "DESC" ? "DESC" : "ASC"
-    
-    let whereQuery = ""
-    let keyword = ""
+    const allowedSortFields = ["id_buku", "judul", "stok", "koin", "thn_terbit"] as const
+    type SortField = typeof allowedSortFields[number]
 
-    if (search) {
-      whereQuery = `WHERE id_buku LIKE ? OR judul LIKE ? OR penulis LIKE ?`
-      keyword = `%${search}%`
-    }
+    const sortField: SortField = allowedSortFields.includes(sortFieldParam as SortField)
+      ? (sortFieldParam as SortField)
+      : "id_buku"
+    const sortDir = sortDirParam?.toUpperCase() === "DESC" ? "desc" : "asc"
+
+    const whereClause: Prisma.bukuWhereInput = search
+      ? {
+          OR: [
+            { id_buku: { contains: search } },
+            { judul: { contains: search } },
+            { penulis: { contains: search } },
+          ],
+        }
+      : {}
+
+    const includeClause = {
+      buku_kategori: {
+        include: {
+          kategori: true,
+        },
+      },
+      detail_buku: true,
+    } satisfies Prisma.bukuInclude
 
     if (!usePagination) {
-      const sql = `
-      SELECT * FROM buku ${whereQuery} ORDER BY ${sortField} ${sortDir}`
-      const queryResult = search 
-        ? await prisma.$queryRawUnsafe(sql, keyword, keyword, keyword)
-        : await prisma.$queryRawUnsafe(sql)
-      return NextResponse.json({ data: queryResult })
+      const bukuData: BukuModel[] = await prisma.buku.findMany({
+        where: whereClause,
+        include: includeClause,
+        orderBy: { [sortField]: sortDir },
+      })
+
+      return NextResponse.json({ data: bukuData })
     }
 
     const page = Number(pageParam)
     const limit = Number(limitParam)
     const offset = (page - 1) * limit
 
-    let bukuData: unknown
-    let totalResult: unknown
-
-    if (search) {
-      bukuData = await prisma.$queryRawUnsafe(
-        `SELECT * FROM buku ${whereQuery} ORDER BY ${sortField} ${sortDir} LIMIT ? OFFSET ?`,
-        keyword, keyword, keyword, limit, offset
-      )
-      totalResult = await prisma.$queryRawUnsafe(`SELECT COUNT(*) as total FROM buku ${whereQuery}`, keyword, keyword, keyword)
-    } else {
-      bukuData = await prisma.$queryRawUnsafe(`SELECT * FROM buku ORDER BY ${sortField} ${sortDir} LIMIT ? OFFSET ?`, limit, offset)
-      totalResult = await prisma.$queryRaw`SELECT COUNT(*) as total FROM buku`
-    }
-
-    const totalData = Number((totalResult as { total: unknown }[])[0].total)
+    const [bukuData, totalData] = await prisma.$transaction([
+      prisma.buku.findMany({
+        where: whereClause,
+        include: includeClause,
+        orderBy: { [sortField]: sortDir },
+        take: limit,
+        skip: offset,
+      }),
+      prisma.buku.count({ where: whereClause }),
+    ])
 
     return NextResponse.json({
-      data: bukuData,
+      data: bukuData as BukuModel[],
       pagination: {
         totalData,
         totalPage: Math.ceil(totalData / limit),
         currentPage: page,
         limit,
-      }
+      },
     })
   } catch (error) {
     console.error("Error API Buku GET:", error)

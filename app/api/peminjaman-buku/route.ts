@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { sp_konfirmasi_peminjaman, sp_proses_pengembalian } from '@/lib/procedures';
+import { Prisma } from '@/app/generated/prisma/client';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/core/auth';
 
-// 1. GET: Ambil & Filter Data Peminjaman
 export async function GET(req: NextRequest) {
   try {
+    // ✅ 1. Validate session first
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "6");
@@ -13,18 +22,29 @@ export async function GET(req: NextRequest) {
 
     const skip = (page - 1) * limit;
 
-    const allowedSortFields = ["id_peminjaman", "tgl_pinjam", "tgl_kembali", "status"];
-    const sortField = allowedSortFields.includes(sortFieldParam || "") ? sortFieldParam ?? '' : "id_peminjaman";
-    const sortDir = sortDirParam?.toLowerCase() === "desc" ? "desc" : "asc";
+    const allowedSortFields = ["id_peminjaman", "tgl_pinjam", "tgl_kembali", "status"] as const
+    type SortField = typeof allowedSortFields[number]
 
-    // Kondisi pencarian (Bisa berdasarkan ID Peminjaman, Nama Pembaca, atau Judul Buku)
-    const whereCondition = search ? {
-      OR: [
-        { id_peminjaman: { contains: search } },
-        { pengguna: { nama_pengguna: { contains: search } } },
-        { detail_buku: { buku: { judul: { contains: search } } } }
-      ]
-    } : {};
+    const sortField: SortField = allowedSortFields.includes(sortFieldParam as SortField)
+      ? (sortFieldParam as SortField)
+      : "id_peminjaman"
+    const sortDir = sortDirParam?.toLowerCase() === "desc" ? "desc" : "asc"
+
+    // ✅ 2. Role-based filter
+    const penggunaId = session.user.role === "pengguna"
+      ? session.user.id                           // pengguna: always their own
+      : searchParams.get("id_pengguna") ?? undefined // staff: optional filter
+
+    const whereCondition: Prisma.peminjaman_bukuWhereInput = {
+      ...(penggunaId && { id_pengguna: penggunaId }),
+      ...(search && {
+        OR: [
+          { id_peminjaman: { contains: search } },
+          { pengguna: { nama_pengguna: { contains: search } } },
+          { detail_buku: { buku: { judul: { contains: search } } } },
+        ],
+      }),
+    }
 
     const [peminjaman, totalData] = await prisma.$transaction([
       prisma.peminjaman_buku.findMany({
@@ -33,7 +53,7 @@ export async function GET(req: NextRequest) {
           pengguna: { select: { nama_pengguna: true, email: true } },
           detail_buku: {
             include: {
-              buku: { select: { judul: true } }
+              buku: { select: { judul: true, img_url: true, koin: true, stamp: true } }
             }
           }
         },
@@ -53,6 +73,7 @@ export async function GET(req: NextRequest) {
         limit,
       }
     });
+
   } catch (error) {
     console.error("Error GET peminjaman:", error);
     return NextResponse.json({ error: "Gagal memuat data peminjaman" }, { status: 500 });
@@ -73,12 +94,7 @@ export async function POST(req: NextRequest) {
       if (!keputusan || !["DITERIMA", "DITOLAK"].includes(keputusan)) {
         return NextResponse.json({ error: "Keputusan tidak valid (DITERIMA/DITOLAK)" }, { status: 400 });
       }
-
-      // Panggil Stored Procedure sp_konfirmasi_peminjaman
-      await prisma.$executeRawUnsafe(
-        `CALL sp_konfirmasi_peminjaman('${id_peminjaman}', '${keputusan}')`
-      );
-
+      await sp_konfirmasi_peminjaman(id_peminjaman, keputusan)
       return NextResponse.json({ message: `Peminjaman berhasil ${keputusan.toLowerCase()}` });
 
     } else if (action === "pengembalian") {
@@ -86,19 +102,13 @@ export async function POST(req: NextRequest) {
       if (isNaN(denda) || denda < 0) {
         return NextResponse.json({ error: "Denda koin tidak boleh bernilai negatif" }, { status: 400 });
       }
-
-      // Panggil Stored Procedure sp_proses_pengembalian
-      await prisma.$executeRawUnsafe(
-        `CALL sp_proses_pengembalian('${id_peminjaman}', ${denda})`
-      );
-
+      await sp_proses_pengembalian(id_peminjaman, denda)
       return NextResponse.json({ message: "Pengembalian buku berhasil diproses" });
     }
 
     return NextResponse.json({ error: "Aksi tidak dikenal" }, { status: 400 });
+
   } catch (error: unknown) {
-    console.error("Procedure Execution Error:", error);
-    // Menangkap pesan kustom dari SIGNAL SQLSTATE '45000' MySQL
     const dbMessage = (error as { message?: string }).message?.split("Message: ")?.[1] || "Gagal memproses data di database";
     return NextResponse.json({ error: dbMessage.trim() }, { status: 400 });
   }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Eye, EyeOff, KeyRound, Mail, ArrowRight, Loader2, BookCopy, User2 } from "lucide-react";
+import { Eye, EyeOff, KeyRound, ArrowRight, Loader2, BookCopy, User2 } from "lucide-react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 

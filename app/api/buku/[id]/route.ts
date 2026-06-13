@@ -2,33 +2,38 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
+import { BukuDetailModel } from '@/lib/models'
 
 type Params = { params: Promise<{ id: string }> }
 
-// ── GET Single Buku (Tetap Sama) ──
 export async function GET(req: NextRequest, { params }: Params) {
   try {
     const { id: id_buku } = await params
 
-    const bukuResult: { id_buku: string }[] = await prisma.$queryRawUnsafe(`SELECT * FROM buku WHERE id_buku = ?`, id_buku)
-    if (!bukuResult || bukuResult.length === 0) {
-      return NextResponse.json({ error: 'Buku tidak ditemukan' }, { status: 404 })
-    }
-    const buku = bukuResult[0]
-
-    const relasiKategori: { id_kategori: string }[] = await prisma.$queryRawUnsafe(
-      `SELECT id_kategori FROM buku_kategori WHERE id_buku = ?`, 
-      id_buku
-    )
-
-    const selectedKategori = relasiKategori.map((item: { id_kategori: string }) => item.id_kategori)
-
-    return NextResponse.json({
-      ...buku,
-      selectedKategori
+    const buku: BukuDetailModel | null = await prisma.buku.findUnique({
+      where: { id_buku },
+      include: {
+        buku_kategori: {
+          include : {
+            kategori : true
+          },
+        },
+      },
     })
 
-  } catch (error: unknown) {
+    if (!buku) {
+      return NextResponse.json({ error: "Buku tidak ditemukan" }, { status: 404 })
+    }
+
+    const { buku_kategori, ...bukuData } = buku
+
+    return NextResponse.json({
+      ...bukuData,
+      selectedKategori: buku_kategori.map((item) => item.id_kategori),
+      buku_kategori,
+    })
+
+  } catch (error) {
     console.error("Error GET detail buku:", error)
     return NextResponse.json({ error: "Gagal mengambil detail relasi buku" }, { status: 500 })
   }

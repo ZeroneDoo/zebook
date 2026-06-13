@@ -32,3 +32,11 @@ export interface Pagination {
   currentPage: number;
   limit: number;
 }
+
+export interface CurrentUser {
+  id_pengguna: string
+  nama_pengguna: string | null
+  email: string
+  koin: number
+  stamp: number
+}

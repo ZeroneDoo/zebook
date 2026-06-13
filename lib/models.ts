@@ -1,5 +1,40 @@
 import { Prisma } from "@/app/generated/prisma/client";
 
+export type KoinModel = Prisma.koinGetPayload<object>
+
+export type KategoriModel = Prisma.kategoriGetPayload<object>;
+
+export type BukuModel = Prisma.bukuGetPayload<{
+  include: {
+    buku_kategori: {
+      include: {
+        kategori: {
+          select: {
+            id_kategori : true,
+            nama_kategori : true
+          }
+        }; // includes id_kategori, nama_kategori
+      };
+    };
+    detail_buku: {
+      select : {
+        id_detail_buku : true,
+        status : true
+      },
+    }; // includes all detail_buku fields
+  };
+}>;
+
+export type BukuDetailModel = Prisma.bukuGetPayload<{
+  include: {
+    buku_kategori: {
+      include: {
+        kategori: true // includes id_kategori, nama_kategori
+      };
+    };
+  };
+}>;
+
 export type DetailBukuModel = Prisma.detail_bukuGetPayload<{
   include: { buku: { select: { judul: true } } };
 }>;

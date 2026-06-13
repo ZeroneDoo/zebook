@@ -11,6 +11,7 @@ import { Breadcrumb } from "@/components/dashboard/BreadCrumb";
 import { SearchBar } from "@/components/dashboard/SearchBar";
 import { ColumnDef, DataTable } from "@/components/dashboard/DataTable";
 import { ToastContainer, useToast } from "@/components/Toast";
+import { formatRupiah } from "@/lib/formats";
 
 interface ApiResponse {
   data: pengguna[];
@@ -86,7 +87,7 @@ export default function PenggunaPage() {
         <div className="flex items-center gap-1">
           <span className="text-sm font-bold text-[#E8461E]">⬡</span>
           <span className="text-sm font-semibold text-gray-700">
-            {user.koin.toLocaleString("id-ID")}
+            {user.koin}
           </span>
         </div>
       ),

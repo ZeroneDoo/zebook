@@ -12,6 +12,7 @@ import { ColumnDef, DataTable } from "@/components/dashboard/DataTable";
 import { ToastContainer, useToast } from "@/components/Toast";
 import { buku } from "@/app/generated/prisma/client";
 import Image from "next/image";
+import { formatRupiah } from "@/lib/formats";
 
 interface ApiResponse {
 	data: buku[];
@@ -98,7 +99,7 @@ export default function BukuPage() {
 					<div className="flex items-center gap-1">
 						<span className="text-sm font-bold text-[#E8461E]">⬡</span>
 						<span className="text-sm font-semibold text-gray-700">
-							{row.koin.toLocaleString("id-ID")}
+							{row.koin}
 						</span>
 					</div>
 					<div className="flex items-center gap-1">
