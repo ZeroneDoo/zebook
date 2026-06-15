@@ -309,6 +309,9 @@ export default function BookDetailPage() {
                           title: "Akses Ditolak",
                           message: "Silakan login ke akun Anda terlebih dahulu untuk meminjam buku.",
                         });
+                        setTimeout(() => {
+                          router.push("/login")
+                        }, 3750);
                         return;
                       }
                       setPaymentMethod("koin");
