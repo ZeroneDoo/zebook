@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
     // 3. Urutkan dari yang paling banyak dipinjam, lalu potong dapatkan TOP 5 ID BUKU UNIK
     const topBookIds = Object.keys(bookCountMap)
       .sort((a, b) => bookCountMap[b] - bookCountMap[a])
-      .slice(0, 5);
+      .slice(0, 6);
 
     // 4. Tarik profil data buku lengkap dari database berdasarkan 5 ID terpopuler tersebut
     const bestSellerBooks = await prisma.buku.findMany({
