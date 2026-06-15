@@ -121,7 +121,7 @@ export default function HomePage() {
         {/* ─── TAMPILAN GRAFIK TREN UTAMA ─── */}
         <div className="bg-white rounded-2xl border border-[#D4C4AE]/30 shadow-[0_4px_20px_rgba(58,40,24,0.02)] p-5">
           <div className="flex items-center gap-2 mb-5">
-            <div className="w-8 h-8 rounded-lg bg-[#56402A]/10 text-[#56402A] flex items-center justify-center">
+            <div className="w-8 h-8 shrink-0 rounded-lg bg-[#56402A]/10 text-[#56402A] flex items-center justify-center">
               <IconPresentationAnalytics size={18} />
             </div>
             <div>

@@ -76,11 +76,20 @@ export default function UserNavbar({
 		<>
 			<nav ref={navbarRef} className="sticky top-0 z-50 h-16.5 px-4 sm:px-8 lg:px-13 flex items-center justify-between bg-[#FAF7F2]/88 backdrop-blur-md border-b border-[#D4C4AE]/35">
 				{/* ─── LOGO ZEBOOK ─── */}
-				<Link href={'/'} className="flex items-center gap-2 sm:gap-3 cursor-pointer">
-					<div className="w-10 h-10 bg-linear-to-br from-[#B8A080] to-[#7A5E3E] rounded-lg overflow-hidden flex items-center justify-center">
-						<Image src="/images/zebook.png" className="w-10 h-10 object-cover" alt="ZeBook Logo" width={40} height={40} />
+				<Link href={'/'} className="flex items-center gap-2 sm:gap-3 cursor-pointer select-none group">
+					{/* Wadah Ikon: w-8 (32px) di mobile, berubah ke w-10 (40px) mulai layar sm */}
+					<div className="w-8 h-8 sm:w-10 sm:h-10 bg-linear-to-br from-[#B8A080] to-[#7A5E3E] rounded-lg overflow-hidden flex items-center justify-center transition-all duration-200">
+						<Image
+							src="/images/zebook.png"
+							className="w-full h-full object-cover" // Menggunakan w-full h-full agar fleksibel mengikuti parent div
+							alt="ZeBook Logo"
+							width={40}
+							height={40}
+						/>
 					</div>
-					<div className="font-serif-elegant text-2xl font-semibold text-[#56402A] tracking-wide">
+
+					{/* Teks Brand: text-xl (20px) di mobile, berubah ke text-2xl (24px) mulai layar sm */}
+					<div className="font-serif-elegant text-xl sm:text-2xl font-semibold text-[#56402A] tracking-wide transition-all duration-200">
 						Ze<em className="not-italic text-[#9A7E5A]">Boo</em>k
 					</div>
 				</Link>
@@ -242,48 +251,50 @@ export default function UserNavbar({
 					)}
 
 				</div>
-			</nav>
+			</nav >
 
 			{/* ─── MODAL DIALOG KONFIRMASI LOGOUT ─── */}
-			{logoutConfirmOpen && (
-				<div className="fixed inset-0 z-10000 flex items-center justify-center p-4">
-					<div
-						className="absolute inset-0 bg-black/40 backdrop-blur-xs transition-opacity"
-						onClick={() => setLogoutConfirmOpen(false)}
-					/>
+			{
+				logoutConfirmOpen && (
+					<div className="fixed inset-0 z-10000 flex items-center justify-center p-4">
+						<div
+							className="absolute inset-0 bg-black/40 backdrop-blur-xs transition-opacity"
+							onClick={() => setLogoutConfirmOpen(false)}
+						/>
 
-					<div className="relative bg-white border border-[#D4C4AE]/50 rounded-[20px] max-w-sm w-full p-6 shadow-[0_12px_40px_rgba(58,40,24,.15)] animate-in fade-in zoom-in-95 duration-150 text-center select-none">
-						<div className="w-12 h-12 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
-							<IconLogout size={22} />
-						</div>
+						<div className="relative bg-white border border-[#D4C4AE]/50 rounded-[20px] max-w-sm w-full p-6 shadow-[0_12px_40px_rgba(58,40,24,.15)] animate-in fade-in zoom-in-95 duration-150 text-center select-none">
+							<div className="w-12 h-12 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+								<IconLogout size={22} />
+							</div>
 
-						<h3 className="text-base font-bold text-[#3A2818]">Konfirmasi Keluar</h3>
-						<p className="text-xs text-[#9A7E5A] mt-2 leading-relaxed px-2">
-							Apakah Anda yakin ingin keluar dari sesi akun ZeBook saat ini? Anda harus masuk kembali nanti.
-						</p>
+							<h3 className="text-base font-bold text-[#3A2818]">Konfirmasi Keluar</h3>
+							<p className="text-xs text-[#9A7E5A] mt-2 leading-relaxed px-2">
+								Apakah Anda yakin ingin keluar dari sesi akun ZeBook saat ini? Anda harus masuk kembali nanti.
+							</p>
 
-						<div className="grid grid-cols-2 gap-3 mt-6">
-							<button
-								type="button"
-								onClick={() => setLogoutConfirmOpen(false)}
-								className="w-full py-2.5 px-4 border border-[#D4C4AE]/70 rounded-xl text-xs font-semibold text-[#56402A] hover:bg-[#FAF7F2] transition-colors cursor-pointer focus:outline-hidden"
-							>
-								Batal
-							</button>
-							<button
-								type="button"
-								onClick={async () => {
-									setLogoutConfirmOpen(false);
-									await signOut()
-								}}
-								className="w-full py-2.5 px-4 bg-red-600 text-white rounded-xl text-xs font-semibold hover:bg-red-700 transition-colors cursor-pointer focus:outline-hidden shadow-xs"
-							>
-								Keluar
-							</button>
+							<div className="grid grid-cols-2 gap-3 mt-6">
+								<button
+									type="button"
+									onClick={() => setLogoutConfirmOpen(false)}
+									className="w-full py-2.5 px-4 border border-[#D4C4AE]/70 rounded-xl text-xs font-semibold text-[#56402A] hover:bg-[#FAF7F2] transition-colors cursor-pointer focus:outline-hidden"
+								>
+									Batal
+								</button>
+								<button
+									type="button"
+									onClick={async () => {
+										setLogoutConfirmOpen(false);
+										await signOut()
+									}}
+									className="w-full py-2.5 px-4 bg-red-600 text-white rounded-xl text-xs font-semibold hover:bg-red-700 transition-colors cursor-pointer focus:outline-hidden shadow-xs"
+								>
+									Keluar
+								</button>
+							</div>
 						</div>
 					</div>
-				</div>
-			)}
+				)
+			}
 		</>
 	);
 }

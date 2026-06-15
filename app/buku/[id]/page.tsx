@@ -279,7 +279,7 @@ export default function BookDetailPage() {
                   <span className="text-[11px] font-bold text-[#FAF7F2]/60 uppercase tracking-widest block">Opsi Metode Pinjam ({durasiPinjamHariDefault} Hari)</span>
                   <div className="flex items-center gap-3 justify-center sm:justify-start flex-wrap">
                     {isBorrowed ? (
-                      <span className="text-2xl font-black tracking-wide">Sedang Dipinjam</span>
+                      <span className="text-2xl font-black tracking-wide">Sedang Diproses ...</span>
                     ) : (
                       <>
                         <div className="flex items-center gap-1.5">
@@ -300,15 +300,10 @@ export default function BookDetailPage() {
                   </div>
                 </div>
 
-                {isBorrowed ? (
-                  <button className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#FAF7F2] text-[#56402A] px-8 py-3.5 rounded-xl text-sm font-bold hover:bg-white shadow-md transition-all cursor-pointer">
-                    <IconBook size={18} />
-                    Baca Buku Sekarang
-                  </button>
-                ) : (
+                {!isBorrowed && (
                   <button
                     onClick={() => {
-                      if (!session) {
+                      if (!session?.user) {
                         toast({
                           type: "error",
                           title: "Akses Ditolak",
