@@ -1,21 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma  from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
   try {
-    const topLoans = await prisma.peminjaman_buku.groupBy({
-      by: ['id_detail_buku'],
-      _count: { id_peminjaman: true },
+    // 1. Ambil seluruh data sirkulasi aktif beserta ID Buku induknya (Tanpa di-take 5 dulu)
+    const allLoans = await prisma.peminjaman_buku.findMany({
       where: {
         status: { in: ['DIPINJAM', 'DIKEMBALIKAN'] } 
       },
-      orderBy: {
-        _count: { id_peminjaman: 'desc' },
-      },
-      take: 5,
+      select: {
+        detail_buku: {
+          select: { id_buku: true }
+        }
+      }
     });
 
-    if (topLoans.length === 0) {
+    // Fallback jika belum ada transaksi peminjaman sama sekali di aplikasi
+    if (allLoans.length === 0) {
       const fallbackBooks = await prisma.buku.findMany({
         take: 5,
         include: {
@@ -30,37 +31,40 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ data: mappedFallback });
     }
 
-    const detailBukuIds = topLoans.map((item) => item.id_detail_buku);
-    const detailItems = await prisma.detail_buku.findMany({
-      where: { id_detail_buku: { in: detailBukuIds } },
-      select: { id_buku: true, id_detail_buku: true },
+    // 2. Hitung akumulasi total peminjaman per ID BUKU INDUK menggunakan JavaScript Map
+    const bookCountMap: Record<string, number> = {};
+    allLoans.forEach((loan) => {
+      const bookId = loan.detail_buku?.id_buku;
+      if (bookId) {
+        bookCountMap[bookId] = (bookCountMap[bookId] || 0) + 1;
+      }
     });
 
-    const uniqueBookIds = Array.from(new Set(detailItems.map((d) => d.id_buku)));
+    // 3. Urutkan dari yang paling banyak dipinjam, lalu potong dapatkan TOP 5 ID BUKU UNIK
+    const topBookIds = Object.keys(bookCountMap)
+      .sort((a, b) => bookCountMap[b] - bookCountMap[a])
+      .slice(0, 5);
 
+    // 4. Tarik profil data buku lengkap dari database berdasarkan 5 ID terpopuler tersebut
     const bestSellerBooks = await prisma.buku.findMany({
-      where: { id_buku: { in: uniqueBookIds } },
+      where: { id_buku: { in: topBookIds } },
       include: {
         buku_kategori: { include: { kategori: true } },
         _count: {
           select: {
-            detail_buku: { where: { status: "TERSEDIA" } } // Hitung dynamic stock
+            detail_buku: { where: { status: "TERSEDIA" } } 
           }
         }
       },
     });
 
-    // Urutkan dan petakan stok dari hasil agregasi terfilter
+    // 5. Petakan ketersediaan stok & pastikan urutan array-nya kembali sesuai ranking popularitasnya
     const sortedAndMappedBestSellers = bestSellerBooks
       .map((b) => ({
         ...b,
-        stok: b._count.detail_buku, // Mengganti kolom stok statis dengan hitungan real-time
+        stok: b._count.detail_buku, // Sinkronisasi hitungan stok real-time
       }))
-      .sort((a, b) => {
-        const countA = topLoans.find(t => detailItems.find(d => d.id_buku === a.id_buku)?.id_detail_buku === t.id_detail_buku)?._count.id_peminjaman || 0;
-        const countB = topLoans.find(t => detailItems.find(d => d.id_buku === b.id_buku)?.id_detail_buku === t.id_detail_buku)?._count.id_peminjaman || 0;
-        return countB - countA;
-      });
+      .sort((a, b) => (bookCountMap[b.id_buku] || 0) - (bookCountMap[a.id_buku] || 0));
 
     return NextResponse.json({ data: sortedAndMappedBestSellers });
   } catch (error) {
