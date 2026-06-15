@@ -388,6 +388,10 @@ BEGIN
       SET status = 'DITOLAK'
       WHERE id_peminjaman = p_id_peminjaman;
 
+
+      UPDATE detail_buku
+      SET status = 'TERSEDIA'
+      WHERE id_detail_buku = v_id_detail_buku;
    END IF;
 
    COMMIT;

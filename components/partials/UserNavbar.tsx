@@ -16,6 +16,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useCurrentUser } from "@/lib/hooks";
+import { signOut } from "next-auth/react";
 
 interface Notification {
 	id: string;
@@ -41,7 +42,6 @@ interface UserNavbarProps {
 }
 
 export default function UserNavbar({
-	onLogout,
 	topUpHref = "/top-up",
 	transaksiKoinHref = "/transaksi-koin",
 	peminjamanBukuHref = "/peminjaman",
@@ -110,7 +110,7 @@ export default function UserNavbar({
 										className="ml-1 flex items-center gap-1 bg-[#56402A] text-[#F3ECE0] text-[11px] font-semibold px-2.5 py-1.5 rounded-full hover:bg-[#3A2818] transition-colors"
 									>
 										<IconPlus size={12} />
-										Top Up
+										Isi Koin
 									</Link>
 								</div>
 
@@ -123,23 +123,26 @@ export default function UserNavbar({
 								</div>
 							</div>
 
-							{/* Tampilan Saldo — Mobile */}
-							<div className="md:hidden flex items-center gap-3 bg-white border border-[#D4C4AE] rounded-full pl-3.5 pr-2 py-1.5 shadow-[0_2px_8px_rgba(58,40,24,.06)] text-sm font-bold text-[#3A2818] h-10.5">
+							{/* Tampilan Saldo — Mobile (Sudah diperkecil & dioptimalkan) */}
+							<div className="md:hidden flex items-center gap-2.5 bg-white border border-[#D4C4AE] rounded-full pl-3 pr-1.5 py-1 shadow-[0_2px_8px_rgba(58,40,24,.06)] text-xs font-bold text-[#3A2818] h-9">
 								<div className="flex items-center gap-1">
-									<IconCoin size={16} className="text-[#C8A84E] shrink-0" />
+									<IconCoin size={14} className="text-[#C8A84E] shrink-0" />
 									<span>{Number(user?.koin || 0)}</span>
 								</div>
-								<div className="w-px h-4 bg-[#D4C4AE]" />
+
+								<div className="w-px h-3.5 bg-[#D4C4AE]/80" />
+
 								<div className="flex items-center gap-1">
-									<IconTicket size={16} className="text-[#9A7E5A] shrink-0" />
+									<IconTicket size={14} className="text-[#9A7E5A] shrink-0" />
 									<span>{Number(user?.stamp || 0)}</span>
 								</div>
+
 								<Link
 									href={topUpHref}
 									aria-label="Top up koin"
-									className="w-6.5 h-6.5 bg-[#56402A] text-white rounded-full flex items-center justify-center hover:bg-[#3A2818] transition-colors shrink-0"
+									className="w-6 h-6 bg-[#56402A] text-white rounded-full flex items-center justify-center hover:bg-[#3A2818] transition-colors shrink-0"
 								>
-									<IconPlus size={12} />
+									<IconPlus size={11} />
 								</Link>
 							</div>
 
@@ -220,19 +223,19 @@ export default function UserNavbar({
 						</>
 					) : (
 						/* 3. STATE UNAUTHENTICATED: Jika BELUM login, profil disembunyikan dan tombol ini tampil */
-						<div className="flex items-center gap-2 sm:gap-3 animate-in fade-in duration-200">
+						<div className="flex items-center gap-1.5 sm:gap-2.5 animate-in fade-in duration-200">
 							<Link
 								href="/login"
-								className="flex items-center gap-2 text-sm sm:text-base font-bold text-[#56402A] hover:text-[#3A2818] px-4 py-2.5 rounded-xl transition-colors cursor-pointer"
+								className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[#56402A] hover:text-[#3A2818] px-3 py-2 rounded-xl transition-colors cursor-pointer"
 							>
-								<IconLogin size={18} className="shrink-0" />
+								<IconLogin size={16} className="shrink-0" />
 								Masuk
 							</Link>
 							<Link
 								href="/register"
-								className="flex items-center gap-2 bg-[#56402A] text-[#F3ECE0] text-sm sm:text-base font-bold px-5 py-2.5 rounded-xl hover:bg-[#3A2818] transition-all shadow-[0_3px_8px_rgba(86,64,42,0.16)] cursor-pointer"
+								className="flex items-center gap-1.5 bg-[#56402A] text-[#F3ECE0] text-xs sm:text-sm font-bold px-4 py-2 rounded-xl hover:bg-[#3A2818] transition-all shadow-[0_2px_6px_rgba(86,64,42,0.15)] cursor-pointer"
 							>
-								<IconUserPlus size={18} className="shrink-0" />
+								<IconUserPlus size={16} className="shrink-0" />
 								Daftar
 							</Link>
 						</div>
@@ -269,9 +272,9 @@ export default function UserNavbar({
 							</button>
 							<button
 								type="button"
-								onClick={() => {
+								onClick={async () => {
 									setLogoutConfirmOpen(false);
-									if (onLogout) onLogout();
+									await signOut()
 								}}
 								className="w-full py-2.5 px-4 bg-red-600 text-white rounded-xl text-xs font-semibold hover:bg-red-700 transition-colors cursor-pointer focus:outline-hidden shadow-xs"
 							>

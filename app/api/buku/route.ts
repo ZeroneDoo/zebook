@@ -35,6 +35,7 @@ export async function GET(req: NextRequest) {
         }
       : {}
 
+    // Ditambahkan _count dengan filter kondisi status "TERSEDIA"
     const includeClause = {
       buku_kategori: {
         include: {
@@ -42,18 +43,33 @@ export async function GET(req: NextRequest) {
         },
       },
       detail_buku: true,
+      _count: {
+        select: {
+          detail_buku: {
+            where: { status: "TERSEDIA" },
+          },
+        },
+      },
     } satisfies Prisma.bukuInclude
 
+    // ─── 1. KONDISI TANPA PAGINASI ───
     if (!usePagination) {
-      const bukuData: BukuModel[] = await prisma.buku.findMany({
+      const bukuData = await prisma.buku.findMany({
         where: whereClause,
         include: includeClause,
         orderBy: { [sortField]: sortDir },
       })
 
-      return NextResponse.json({ data: bukuData })
+      // Petakan data untuk menimpa properti 'stok' secara dinamis
+      const mappedData = bukuData.map((buku) => ({
+        ...buku,
+        stok: buku._count.detail_buku,
+      })) as BukuModel[]
+
+      return NextResponse.json({ data: mappedData })
     }
 
+    // ─── 2. KONDISI DENGAN PAGINASI ───
     const page = Number(pageParam)
     const limit = Number(limitParam)
     const offset = (page - 1) * limit
@@ -69,8 +85,14 @@ export async function GET(req: NextRequest) {
       prisma.buku.count({ where: whereClause }),
     ])
 
+    // Petakan data hasil pagination untuk menimpa properti 'stok' secara dinamis
+    const mappedData = bukuData.map((buku) => ({
+      ...buku,
+      stok: buku._count.detail_buku,
+    })) as BukuModel[]
+
     return NextResponse.json({
-      data: bukuData as BukuModel[],
+      data: mappedData,
       pagination: {
         totalData,
         totalPage: Math.ceil(totalData / limit),
@@ -98,8 +120,6 @@ export async function POST(req: NextRequest) {
     const penulis = formData.get("penulis") as string
     const thn_terbit = formData.get("thn_terbit") as string
     const kategori_ids = formData.get("kategori_ids") as string
-    // const body = await req.json()
-    // const { judul, deskripsi, stok, koin, stamp, penerbit, penulis, thn_terbit, kategori_ids } = body
 
     const file = formData.get("file") as File | null
 
@@ -109,30 +129,23 @@ export async function POST(req: NextRequest) {
 
     let imgUrl = "/images/placeholder-book.png"
 
-    // Jika ada file biner yang dikirimkan, simpan ke server lokal
     if (file && file.size > 0) {
       const bytes = await file.arrayBuffer()
       const buffer = Buffer.from(bytes)
 
-      // Buat nama berkas unik berbasis waktu
       const uniqueFilename = `${Date.now()}-${file.name.replace(/\s+/g, "-")}`
       const uploadDir = join(process.cwd(), "public", "images/books")
       const filePath = join(uploadDir, uniqueFilename)
 
-      // Pastikan folder public/uploads telah terbuat
       await mkdir(uploadDir, { recursive: true })
-      // Tulis file ke disk storage
       await writeFile(filePath, buffer)
       
-      // Definisikan path URL publiknya
       imgUrl = `/images/books/${uniqueFilename}`
     }
 
     console.log("Input POST FormData Buku Berhasil Diekstrak. URL Gambar:", imgUrl)
 
-    // Eksekusi pemanggilan MySQL Stored Procedure
     await prisma.$executeRawUnsafe(`SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci`);
-    // Signature: sp_tambah_buku(p_judul, p_deskripsi, p_stok, p_koin, p_stamp, p_penerbit, p_penulis, p_thn_terbit, p_kategori_ids)
     await prisma.$executeRawUnsafe(
       `CALL sp_tambah_buku(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       judul,
@@ -143,7 +156,7 @@ export async function POST(req: NextRequest) {
       penerbit,
       penulis,
       Number(thn_terbit),
-      kategori_ids || "", // String terpisah koma misal: 'KAT0001,KAT0002'
+      kategori_ids || "", 
       imgUrl
     )
 

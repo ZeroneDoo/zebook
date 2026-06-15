@@ -1,42 +1,70 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { sp_konfirmasi_peminjaman, sp_proses_pengembalian } from '@/lib/procedures';
-import { Prisma } from '@/app/generated/prisma/client';
+import { Prisma, peminjaman_buku_status } from '@/app/generated/prisma/client';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/core/auth';
 
 export async function GET(req: NextRequest) {
   try {
     // ✅ 1. Validate session first
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions);
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "6");
     const search = searchParams.get("search") || "";
+    
+    // 💡 TAMBAHAN: Ambil filter kustom dari query parameter
+    const statusParam = searchParams.get("status") || "SEMUA";
+    const startDateParam = searchParams.get("startDate"); // format: YYYY-MM-DD
+    const endDateParam = searchParams.get("endDate");     // format: YYYY-MM-DD
+
     const sortFieldParam = searchParams.get("sort_field");
     const sortDirParam = searchParams.get("sort_dir");
 
     const skip = (page - 1) * limit;
 
-    const allowedSortFields = ["id_peminjaman", "tgl_pinjam", "tgl_kembali", "status"] as const
-    type SortField = typeof allowedSortFields[number]
+    const allowedSortFields = ["id_peminjaman", "tgl_pinjam", "tgl_kembali", "status"] as const;
+    type SortField = typeof allowedSortFields[number];
 
+    // 💡 DIUBAH: Default urutan diganti ke 'tgl_pinjam' dengan arah 'desc' agar data terbaru muncul paling atas
     const sortField: SortField = allowedSortFields.includes(sortFieldParam as SortField)
       ? (sortFieldParam as SortField)
-      : "id_peminjaman"
-    const sortDir = sortDirParam?.toLowerCase() === "desc" ? "desc" : "asc"
+      : "tgl_pinjam";
+    const sortDir = sortDirParam?.toLowerCase() === "asc" ? "asc" : "desc";
 
     // ✅ 2. Role-based filter
     const penggunaId = session.user.role === "pengguna"
-      ? session.user.id                           // pengguna: always their own
-      : searchParams.get("id_pengguna") ?? undefined // staff: optional filter
+      ? session.user.id                              // pengguna: always their own
+      : searchParams.get("id_pengguna") ?? undefined; // staff/admin: optional filter
+
+    // 💡 PASTIKAN nilai statusParam dikonversi ke uppercase sebelum di-cast
+    // const statusParam = searchParams.get("status") || "SEMUA";
 
     const whereCondition: Prisma.peminjaman_bukuWhereInput = {
       ...(penggunaId && { id_pengguna: penggunaId }),
+      
+      // Filter Status (Abaikan jika bernilai "SEMUA")
+      ...(statusParam && statusParam.toUpperCase() !== "SEMUA" && {
+        status: { 
+          // 💡 SOLUSI: Lakukan type-casting ke Enum Prisma agar TypeScript tidak error
+          equals: statusParam.toUpperCase() as peminjaman_buku_status 
+        }
+      }),
+
+      // Filter Rentang Tanggal Pinjam
+      ...((startDateParam || endDateParam) && {
+        tgl_pinjam: {
+          ...(startDateParam && { gte: new Date(`${startDateParam}T00:00:00.000Z`) }),
+          ...(endDateParam && { lte: new Date(`${endDateParam}T23:59:59.999Z`) }),
+        }
+      }),
+
+      // Filter Global Search
       ...(search && {
         OR: [
           { id_peminjaman: { contains: search } },
@@ -44,8 +72,9 @@ export async function GET(req: NextRequest) {
           { detail_buku: { buku: { judul: { contains: search } } } },
         ],
       }),
-    }
+    };
 
+    // ✅ 3. Jalankan Transaksi Database
     const [peminjaman, totalData] = await prisma.$transaction([
       prisma.peminjaman_buku.findMany({
         where: whereCondition,

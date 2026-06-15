@@ -42,10 +42,10 @@ const menuItems: MenuItem[] = [
   { label: "Peminjaman Buku", icon: BookMarked, href: "/admin/peminjaman-buku" },
 ];
 
-const generalItems: NavFlat[] = [
-  { label: "Settings", icon: Settings, href: "/admin/settings" },
-  { label: "Help Desk", icon: HelpCircle, href: "/admin/help" },
-];
+// const generalItems: NavFlat[] = [
+//   { label: "Settings", icon: Settings, href: "/admin/settings" },
+//   { label: "Help Desk", icon: HelpCircle, href: "/admin/help" },
+// ];
 
 function SubNavItem({ item, onClick }: { item: SubItem; onClick: () => void }) {
   const pathname = usePathname();
@@ -274,14 +274,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               )}
             </div>
           </div>
-          <div>
+          {/* <div>
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-2">General</p>
             <div className="space-y-1">
               {generalItems.map((item) => (
                 <FlatNavItem key={item.label} item={item} onClick={onClose} />
               ))}
             </div>
-          </div>
+          </div> */}
         </nav>
 
         {/* Logout Button */}

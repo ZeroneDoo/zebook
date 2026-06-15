@@ -7,6 +7,14 @@ import { CheckCircle2, XCircle, AlertTriangle, Info, X } from "lucide-react";
 
 export type ToastType = "success" | "error" | "warning" | "info";
 
+export type ToastPosition =
+	| "top-left"
+	| "top-center"
+	| "top-right"
+	| "bottom-left"
+	| "bottom-center"
+	| "bottom-right";
+
 export interface ToastData {
 	id: string;
 	type: ToastType;
@@ -31,20 +39,31 @@ const STYLES = {
 	info: { bar: "bg-blue-500", icon: "text-blue-500", border: "border-blue-100", bg: "bg-white" },
 };
 
+// 💡 Animasi responsif: Di mobile akan slide dari atas/bawah, di desktop mengikuti posisi sudut
+const ANIMATION_STYLES: Record<ToastPosition, string> = {
+	"top-left": "opacity-0 -translate-y-4 sm:translate-y-0 sm:-translate-x-8",
+	"top-center": "opacity-0 -translate-y-4",
+	"top-right": "opacity-0 -translate-y-4 sm:translate-y-0 sm:translate-x-8",
+	"bottom-left": "opacity-0 translate-y-4 sm:translate-y-0 sm:-translate-x-8",
+	"bottom-center": "opacity-0 translate-y-4",
+	"bottom-right": "opacity-0 translate-y-4 sm:translate-y-0 sm:translate-x-8",
+};
+
 // ─── ToastItem ────────────────────────────────────────────────────────────────
 
 function ToastItem({
 	toast,
 	onRemove,
+	position = "bottom-right",
 }: {
 	toast: ToastData;
 	onRemove: (id: string) => void;
+	position?: ToastPosition;
 }) {
 	const duration = toast.duration ?? 4000;
 	const [visible, setVisible] = useState(false);
 	const [progress, setProgress] = useState(100);
 
-	// Stable ref for onRemove — never causes re-runs when parent re-renders
 	const onRemoveRef = useRef(onRemove);
 	useEffect(() => { onRemoveRef.current = onRemove; }, [onRemove]);
 
@@ -53,14 +72,11 @@ function ToastItem({
 	const remainingRef = useRef(duration);
 	const startRef = useRef<number | null>(null);
 
-	// Slide in on mount
 	useEffect(() => {
 		const t = setTimeout(() => setVisible(true), 10);
 		return () => clearTimeout(t);
-	}, []); // ← empty: runs once on mount only
+	}, []);
 
-	// Countdown — also runs once on mount only
-	// Uses refs for everything so no dependency churn
 	useEffect(() => {
 		function startCountdown() {
 			startRef.current = performance.now();
@@ -86,7 +102,7 @@ function ToastItem({
 		return () => {
 			if (rafRef.current) cancelAnimationFrame(rafRef.current);
 		};
-	}, []); // ← empty: timer starts once, never restarts due to re-renders
+	}, [duration, toast.id]);
 
 	function handleMouseEnter() {
 		pausedRef.current = true;
@@ -127,14 +143,15 @@ function ToastItem({
 			onMouseEnter={handleMouseEnter}
 			onMouseLeave={handleMouseLeave}
 			className={`
-        relative flex items-start gap-3 w-full sm:w-80 rounded-2xl border shadow-lg shadow-black/5
-        px-4 py-3.5 overflow-hidden cursor-default select-none
-        transition-all duration-300 ease-out
-        ${style.bg} ${style.border}
-        ${visible
+            relative flex items-start gap-3 w-full sm:w-85 rounded-2xl border shadow-xl shadow-black/5
+            px-4 py-3.5 overflow-hidden cursor-default select-none pointer-events-auto
+            transition-all duration-300 ease-out
+            ${style.bg} ${style.border}
+            ${visible
 					? "opacity-100 translate-y-0 sm:translate-x-0"
-					: "opacity-0 translate-y-4 sm:translate-y-0 sm:translate-x-8"}
-      `}
+					: ANIMATION_STYLES[position]
+				}
+          `}
 		>
 			{/* Progress bar */}
 			<div
@@ -146,19 +163,19 @@ function ToastItem({
 			<Icon size={18} className={`${style.icon} shrink-0 mt-0.5`} />
 
 			{/* Text */}
-			<div className="flex-1 min-w-0">
-				<p className="text-sm font-semibold text-gray-800 leading-tight">{toast.title}</p>
+			<div className="flex-1 min-w-0 break-words">
+				<p className="text-sm font-semibold text-gray-800 Regal leading-tight">{toast.title}</p>
 				{toast.message && (
-					<p className="text-xs text-gray-400 mt-0.5 leading-snug">{toast.message}</p>
+					<p className="text-xs text-gray-500 mt-0.5 leading-snug">{toast.message}</p>
 				)}
 			</div>
 
-			{/* Close */}
+			{/* Close Button — 💡 Diperbesar area tap-nya (p-1.5) agar mudah ditekan jari di HP */}
 			<button
 				onClick={handleClose}
-				className="shrink-0 p-0.5 rounded-lg text-gray-300 hover:text-gray-500 hover:bg-gray-100 transition-colors"
+				className="shrink-0 p-1.5 -mt-1 -mr-1 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors active:bg-gray-200"
 			>
-				<X size={14} />
+				<X size={15} />
 			</button>
 		</div>
 	);
@@ -169,16 +186,27 @@ function ToastItem({
 interface ToastContainerProps {
 	toasts: ToastData[];
 	onRemove: (id: string) => void;
+	position?: ToastPosition;
 }
 
-export function ToastContainer({ toasts, onRemove }: ToastContainerProps) {
+// 💡 Penataan layout kontainer yang fleksibel dan aman di perangkat mobile
+const CONTAINER_POSITION_STYLES: Record<ToastPosition, string> = {
+	"top-left": "top-0 left-0 right-0 p-4 sm:top-5 sm:left-5 sm:right-auto sm:p-0 sm:items-start flex-col-reverse",
+	"top-center": "top-0 left-0 right-0 p-4 sm:top-5 sm:left-1/2 sm:-translate-x-1/2 sm:p-0 sm:items-center flex-col-reverse",
+	"top-right": "top-0 left-0 right-0 p-4 sm:top-5 sm:right-5 sm:left-auto sm:p-0 sm:items-end flex-col-reverse",
+	"bottom-left": "bottom-0 left-0 right-0 p-4 sm:bottom-5 sm:left-5 sm:right-auto sm:p-0 sm:items-start flex-col",
+	"bottom-center": "bottom-0 left-0 right-0 p-4 sm:bottom-5 sm:left-1/2 sm:-translate-x-1/2 sm:p-0 sm:items-center flex-col",
+	"bottom-right": "bottom-0 left-0 right-0 p-4 sm:bottom-5 sm:right-5 sm:left-auto sm:p-0 sm:items-end flex-col",
+};
+
+export function ToastContainer({ toasts, onRemove, position = "bottom-right" }: ToastContainerProps) {
 	return (
-		<div className="fixed z-9999 flex flex-col gap-2 sm:gap-2.5
-      bottom-0 left-0 right-0 p-3 items-stretch
-      sm:bottom-5 sm:right-5 sm:left-auto sm:p-0 sm:w-80 sm:items-end"
+		<div
+			// 💡 pointer-events-none: Mencegah kontainer kosong menghalangi klik ke tombol/input di bawahnya
+			className={`fixed z-9999 flex gap-2.5 max-h-screen pointer-events-none sm:w-85 ${CONTAINER_POSITION_STYLES[position]}`}
 		>
 			{toasts.map((t) => (
-				<ToastItem key={t.id} toast={t} onRemove={onRemove} />
+				<ToastItem key={t.id} toast={t} onRemove={onRemove} position={position} />
 			))}
 		</div>
 	);
@@ -189,8 +217,6 @@ export function ToastContainer({ toasts, onRemove }: ToastContainerProps) {
 export function useToast() {
 	const [toasts, setToasts] = useState<ToastData[]>([]);
 
-	// Stable reference — never changes, so ToastItem's onRemoveRef
-	// always points to the latest version without triggering re-runs
 	const remove = useCallback((id: string) => {
 		setToasts((prev) => prev.filter((t) => t.id !== id));
 	}, []);

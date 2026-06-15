@@ -222,7 +222,7 @@ export default function TopUpPage() {
                           <div className="font-bold text-[#3A2818]">{formatRupiah(pkg.jum_koin)} Koin</div>
                         </div>
                       </div>
-                      <div className="font-semibold text-sm text-[#56402A]">Rp {formatRupiah(pkg.harga)}</div>
+                      <div className="font-semibold text-sm text-[#56402A]">{formatRupiah(pkg.harga)}</div>
                     </div>
                   ))}
                 </div>
@@ -309,7 +309,7 @@ export default function TopUpPage() {
               <div className="flex justify-between py-2 bg-[#FAF7F2] px-3 rounded-lg">
                 <span className="text-[#56402A] font-medium">Total Bayar</span>
                 <span className="font-serif-elegant font-bold text-[#56402A] text-base">
-                  Rp {formatRupiah(currentPkg.harga)}
+                  {formatRupiah(currentPkg.harga)}
                 </span>
               </div>
 

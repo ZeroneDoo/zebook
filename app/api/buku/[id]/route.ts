@@ -3,23 +3,33 @@ import prisma from '@/lib/prisma'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { BukuDetailModel } from '@/lib/models'
-
 type Params = { params: Promise<{ id: string }> }
 
 export async function GET(req: NextRequest, { params }: Params) {
   try {
     const { id: id_buku } = await params
 
-    const buku: BukuDetailModel | null = await prisma.buku.findUnique({
-      where: { id_buku },
-      include: {
-        buku_kategori: {
-          include : {
-            kategori : true
+    // Menjalankan query ambil data buku dan hitung stok secara paralel
+    const [buku, totalStokTersedia] = await Promise.all([
+      prisma.buku.findUnique({
+        where: { id_buku },
+        include: {
+          buku_kategori: {
+            include: {
+              kategori: true
+            },
           },
         },
-      },
-    })
+      }),
+      
+      // Menghitung jumlah fisik/detail buku yang berstatus "tersedia"
+      prisma.detail_buku.count({
+        where: {
+          id_buku: id_buku,
+          status: "TERSEDIA"
+        }
+      })
+    ])
 
     if (!buku) {
       return NextResponse.json({ error: "Buku tidak ditemukan" }, { status: 404 })
@@ -29,6 +39,7 @@ export async function GET(req: NextRequest, { params }: Params) {
 
     return NextResponse.json({
       ...bukuData,
+      stok: totalStokTersedia, // Menimpa stok statis dengan hasil perhitungan dinamis
       selectedKategori: buku_kategori.map((item) => item.id_kategori),
       buku_kategori,
     })

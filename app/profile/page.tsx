@@ -13,12 +13,13 @@ import {
   IconChevronDown,
   IconLoader2,
   IconArrowLeft,
-	IconEyeOff,
-	IconEye,
+  IconEyeOff,
+  IconEye,
 } from "@tabler/icons-react";
 import UserLayout from "@/components/layout/UserLayout";
 // Import sistem custom toast Anda di sini
-import { useToast, ToastContainer } from "@/components/Toast"; 
+import { useToast, ToastContainer } from "@/components/Toast";
+import Image from "next/image";
 
 interface UserData {
   id_pengguna: string;
@@ -30,7 +31,7 @@ interface UserData {
 
 export default function ProfilePage() {
   const router = useRouter();
-  
+
   // Mengaktifkan custom toast hook
   const { toasts, toast, remove } = useToast();
 
@@ -62,7 +63,7 @@ export default function ProfilePage() {
       try {
         setIsLoadingData(true);
         const response = await fetch("/api/me");
-        
+
         if (!response.ok) {
           throw new Error("Gagal memuat profil pengguna");
         }
@@ -154,7 +155,7 @@ export default function ProfilePage() {
       }
 
       setUser(resData.data);
-      
+
       // Memicu Toast Notifikasi Sukses
       toast({
         type: "success",
@@ -207,9 +208,18 @@ export default function ProfilePage() {
 
           {/* 1. Header Balance Card Component */}
           <div className="bg-white rounded-[20px] border border-[#D4C4AE]/40 p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-5 shadow-[0_8px_32px_rgba(58,40,24,.03)]">
-            <div className="w-20 h-20 rounded-full bg-linear-to-br from-[#B8A080] to-[#7A5E3E] flex items-center justify-center text-2xl font-semibold text-[#F3ECE0] tracking-wider shrink-0 shadow-inner">
+            {/* <div className="w-20 h-20 rounded-full bg-linear-to-br from-[#B8A080] to-[#7A5E3E] flex items-center justify-center text-2xl font-semibold text-[#F3ECE0] tracking-wider shrink-0 shadow-inner">
               {user?.nama_pengguna ? user.nama_pengguna.substring(0, 2).toUpperCase() : "UU"}
-            </div>
+            </div> */}
+            <Image
+              unoptimized
+              src={`https://api.dicebear.com/9.x/initials/svg?seed=${user?.nama_pengguna}`}
+              alt={`Avatar ${user?.nama_pengguna ?? 'Anonim'}`}
+              width={80}
+              height={80}
+              sizes="80px"
+              className="w-20 h-20 rounded-full tracking-wider shrink-0 select-none shadow-sm"
+            />
             <div className="text-center sm:text-left flex-1 min-w-0">
               <h1 className="font-serif-elegant text-2xl font-bold text-[#56402A] truncate">
                 {user?.nama_pengguna || "Pengguna ZeBook"}
@@ -254,7 +264,7 @@ export default function ProfilePage() {
 
             <form onSubmit={handleUpdateProfile} className="p-6 sm:p-8 space-y-5">
               {/* Read-only ID Block */}
-              <div className="space-y-1.5">
+              {/* <div className="space-y-1.5">
                 <label className="text-xs font-bold text-[#56402A] uppercase tracking-wider flex items-center gap-1">
                   ID Pengguna <span className="text-[#B8A080] font-normal text-[11px]">(Tidak dapat diubah)</span>
                 </label>
@@ -267,7 +277,7 @@ export default function ProfilePage() {
                     className="w-full pl-10 pr-4 py-2.5 bg-stone-100/80 border border-[#D4C4AE]/40 rounded-xl text-sm text-[#9A7E5A] font-mono cursor-not-allowed select-none"
                   />
                 </div>
-              </div>
+              </div> */}
 
               {/* Nama Pengguna Field */}
               <div className="space-y-1.5">

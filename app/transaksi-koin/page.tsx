@@ -104,13 +104,6 @@ export default function TransaksiPage() {
       : { name: dbValue, group: 'Lainnya' };
   };
 
-  // Helper untuk memformat string/number harga menjadi format Rupiah yang rapi
-  // const formatRupiah = (value: string | number) => {
-  //   const numericValue = typeof value === 'string' ? parseInt(value, 10) : value;
-  //   if (isNaN(numericValue)) return 'Rp 0';
-  //   return `Rp ${numericValue}`;
-  // };
-
   return (
     <UserLayout>
       <div className="min-h-screen flex flex-col text-[#3A2818]" style={{ fontFamily: "'Jost', sans-serif" }}>
@@ -129,7 +122,7 @@ export default function TransaksiPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-xl bg-[#56402A] flex items-center justify-center text-white shadow-[0_4px_14px_rgba(86,64,42,0.2)]">
+              <div className="w-11 h-11 rounded-xl bg-[#56402A] flex items-center justify-center text-white shadow-[0_4px_14px_rgba(86,64,42,0.2)] shrink-0">
                 <IconHistory size={24} />
               </div>
               <div>
@@ -140,7 +133,7 @@ export default function TransaksiPage() {
           </div>
 
           {/* ─── PANEL FILTER UTAMA ─── */}
-          <section className="bg-white rounded-2xl p-5 border border-[#D4C4AE]/30 shadow-[0_4px_20px_rgba(58,40,24,0.04)] mb-8">
+          <section className="bg-white rounded-2xl p-5 border border-[#D4C4AE]/30 shadow-[0_4px_20px_rgba(58,40,24,0.04)] mb-6">
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#56402A] mb-4 pb-2 border-b border-[#FAF7F2]">
               <IconFilter size={14} />
               <span>Panel Penyaringan Data</span>
@@ -181,6 +174,16 @@ export default function TransaksiPage() {
           {errorMessage && (
             <div className="mb-6 p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-sm font-medium">
               {errorMessage}
+            </div>
+          )}
+
+          {/* ─── INFORMASI TOTAL DATA ─── */}
+          {!isLoadingData && (
+            <div className="mb-3 flex items-center justify-between px-1 text-xs text-[#9A7E5A]">
+              <div>
+                Menampilkan <span className="font-bold text-[#56402A]">{filteredTransactions.length}</span> dari{' '}
+                <span className="font-bold text-[#56402A]">{transactions.length}</span> riwayat transaksi koin
+              </div>
             </div>
           )}
 
@@ -235,7 +238,7 @@ export default function TransaksiPage() {
 
                       {/* ─── BLOK INFORMASI HARGA & METODE PEMBAYARAN ─── */}
                       <div className="grid grid-cols-2 gap-3 mt-2 pt-3 border-t border-[#FAF7F2] text-xs">
-                        {/* Kolom Informasi Harga (Menggantikan Waktu Transaksi) */}
+                        {/* Kolom Informasi Harga */}
                         <div className="space-y-0.5">
                           <span className="block text-[10px] text-[#9A7E5A] uppercase font-bold tracking-wider">Harga</span>
                           <span className="flex items-center gap-1.5 text-[#3A2818] font-semibold mt-0.5">
